@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+<style>
+:root{
+  --paper:#dcd9d1;
+  --card:#f1efe9;
+  --ink:#141414;
+  --muted:#6f6c65;
+  --accent:#ff4419;
+  --hair:1px solid var(--ink);
+  --radius:10px;
+  --row:150px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--paper)}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'IBM Plex Mono',monospace}
+button{font:inherit;cursor:pointer;background:none;border:none;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:inherit}
+
+/* ---------- layout ---------- */
+#app{max-width:1240px;margin:0 auto;padding:28px clamp(16px,4vw,40px) 80px}
+body.editing #app{margin-left:340px;max-width:none}
+@media (max-width:980px){ body.editing #app{margin-left:0;padding-top:16px} }
+
+/* ---------- header ---------- */
+header#site-header{
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:18px;padding:18px 0 26px;border-bottom:var(--hair);margin-bottom:26px;
+}
+#h-name{font-size:clamp(28px,5vw,46px);font-weight:700;letter-spacing:-0.02em;line-height:1.02}
+#h-name .dot{color:var(--accent)}
+#h-tag{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted);margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
+.h-actions{display:flex;gap:10px;align-items:center}
+.pill{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  border:var(--hair);border-radius:999px;padding:9px 16px;background:var(--card);
+  text-decoration:none;display:inline-block;transition:background .15s,color .15s;
+}
+.pill:hover{background:var(--ink);color:var(--card)}
+.pill.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill.hot:hover{background:var(--ink);border-color:var(--ink)}
+
+/* ---------- project page top bar ---------- */
+#proj-bar{display:none;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+#proj-bar.show{display:flex}
+#proj-back{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  border:var(--hair);border-radius:999px;padding:7px 14px;background:var(--card);text-decoration:none;
+}
+#proj-back:hover{background:var(--ink);color:var(--card)}
+#proj-title{font-size:clamp(20px,3vw,30px);font-weight:700;letter-spacing:-0.01em}
+#proj-desc{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);width:100%}
+
+/* ---------- folder landing ---------- */
+#folders{
+  display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+}
+.folder{
+  position:relative;cursor:pointer;text-align:left;
+  display:flex;flex-direction:column;
+}
+.folder .tab{
+  align-self:flex-start;max-width:85%;
+  border:var(--hair);border-bottom:none;border-radius:8px 8px 0 0;
+  background:var(--card);padding:7px 16px 6px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+  text-transform:uppercase;letter-spacing:.05em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  position:relative;z-index:2;
+}
+.folder .body{
+  border:var(--hair);border-radius:0 var(--radius) var(--radius) var(--radius);
+  background:var(--card);overflow:hidden;margin-top:-1px;
+  display:flex;flex-direction:column;
+}
+.folder .cover{aspect-ratio:4/3;background:#c9c6be;position:relative}
+.folder .cover img,.folder .cover video{width:100%;height:100%;object-fit:cover;display:block}
+.folder .cover .ph{
+  position:absolute;inset:0;display:grid;place-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;color:var(--muted);
+}
+.folder .meta{
+  border-top:var(--hair);padding:7px 12px;display:flex;gap:10px;align-items:center;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;color:var(--muted);
+}
+.folder .meta .n{color:var(--ink)}
+.folder .meta .types{margin-left:auto;text-transform:uppercase;font-size:10px}
+.folder:hover .tab{background:var(--accent);border-color:var(--accent);color:#fff}
+.folder:hover .cover{filter:saturate(1.05)}
+body.editing .folder{cursor:grab}
+body.editing .folder.dragging{opacity:.4}
+body.editing .folder .tab:hover{background:#ffe6df;color:var(--ink);border-color:var(--ink)}
+body.editing .folder .tab{cursor:text}
+
+/* ---------- bento grid ---------- */
+#grid{
+  display:none;gap:14px;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-auto-rows:var(--row);
+  grid-auto-flow:dense;
+}
+#grid.show{display:grid}
+.tile{
+  position:relative;border:var(--hair);border-radius:var(--radius);
+  background:var(--card);overflow:hidden;display:flex;flex-direction:column;
+}
+.tile.size-s{grid-column:span 1;grid-row:span 1}
+.tile.size-w{grid-column:span 2;grid-row:span 1}
+.tile.size-t{grid-column:span 1;grid-row:span 2}
+.tile.size-l{grid-column:span 2;grid-row:span 2}
+.tile.size-xl{grid-column:span 3;grid-row:span 2}
+@media (max-width:980px){
+  #grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:130px}
+  .tile.size-w,.tile.size-l,.tile.size-xl{grid-column:span 2}
+}
+@media (max-width:520px){
+  #grid{grid-auto-rows:115px}
+}
+.tile .media{flex:1;min-height:0;position:relative;background:#c9c6be}
+.tile .media img,.tile .media video{width:100%;height:100%;object-fit:cover;display:block}
+.tile .media model-viewer{width:100%;height:100%;--poster-color:transparent;background:#c9c6be}
+.tile .label{
+  display:flex;align-items:center;gap:10px;border-top:var(--hair);
+  padding:7px 10px;background:var(--card);font-family:'IBM Plex Mono',monospace;
+  font-size:11px;letter-spacing:.04em;min-height:32px;
+}
+.tile .idx{color:var(--muted)}
+.tile .t-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.tile .badge{
+  border:1px solid var(--ink);border-radius:4px;padding:1px 6px;font-size:10px;
+  text-transform:uppercase;flex-shrink:0;
+}
+.tile .badge.b-3d{background:var(--accent);border-color:var(--accent);color:#fff}
+.tile .badge.b-vid,.tile .badge.b-gif{background:var(--ink);color:var(--card)}
+.tile:not(.editing-tile){cursor:zoom-in}
+.tile:hover .t-title{color:var(--accent)}
+
+/* empty state */
+#empty{
+  border:1px dashed var(--muted);border-radius:var(--radius);padding:60px 24px;
+  text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:13px;
+  display:none;line-height:2;
+}
+
+/* ---------- footer ---------- */
+footer{margin-top:40px;padding-top:16px;border-top:var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer .mono{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* ---------- editor sidebar ---------- */
+#editor{
+  display:none;position:fixed;inset:0 auto 0 0;width:340px;z-index:50;
+  background:var(--card);border-right:var(--hair);
+  padding:22px 20px;overflow-y:auto;
+}
+body.editing #editor{display:block}
+@media (max-width:980px){
+  body.editing #editor{position:static;width:auto;border-right:none;border-bottom:var(--hair);inset:auto}
+}
+#editor h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:8px}
+#editor h2::before{content:"";width:9px;height:9px;background:var(--accent);border-radius:2px;display:inline-block}
+#editor .sect{margin-top:20px}
+#editor .sect-head{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid #c9c6be;padding-bottom:5px;margin-bottom:6px}
+#editor label{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 0 4px}
+#editor input[type=text],#editor input[type=email]{
+  width:100%;border:var(--hair);border-radius:6px;background:var(--paper);
+  padding:8px 10px;font:13px 'IBM Plex Mono',monospace;color:var(--ink);
+}
+#folder-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.fl-item{
+  display:flex;align-items:center;gap:8px;border:var(--hair);border-radius:7px;
+  background:var(--paper);padding:7px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+  cursor:pointer;text-align:left;width:100%;
+}
+.fl-item .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.fl-item .ct{color:var(--muted);font-size:10px}
+.fl-item.active{background:var(--ink);color:var(--card)}
+.fl-item.active .ct{color:#a5a29a}
+.fl-item:hover:not(.active){border-color:var(--accent);color:var(--accent)}
+#drop{
+  margin-top:10px;border:1.5px dashed var(--ink);border-radius:var(--radius);
+  padding:22px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11px;
+  color:var(--muted);transition:background .15s,border-color .15s;
+}
+#drop.over{background:#ffe6df;border-color:var(--accent);color:var(--accent)}
+#drop.disabled{opacity:.45;pointer-events:none}
+#drop strong{display:block;color:var(--ink);font-size:12px;margin-bottom:6px;text-transform:uppercase}
+.btn{
+  width:100%;margin-top:10px;border:var(--hair);border-radius:8px;padding:11px;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.05em;
+  background:var(--paper);transition:background .15s,color .15s;
+}
+.btn:hover{background:var(--ink);color:var(--card)}
+.btn.hot{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.hot:hover{background:var(--ink);border-color:var(--ink)}
+.btn.sm{padding:8px;font-size:11px;margin-top:6px}
+.btn.danger:hover{background:var(--accent);border-color:var(--accent)}
+#editor .hint{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.7;color:var(--muted);margin-top:10px}
+#editor .hint b{color:var(--ink)}
+#filelist{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.8;margin-top:8px;word-break:break-all}
+#filelist span{color:var(--accent)}
+
+/* tile edit controls */
+.tile .ctrl{position:absolute;top:6px;right:6px;display:none;gap:5px;z-index:3}
+body.editing .tile .ctrl{display:flex}
+.ctrl button{
+  width:26px;height:26px;border:var(--hair);border-radius:6px;background:var(--card);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1;display:grid;place-items:center;
+}
+.ctrl button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+body.editing .tile{cursor:grab}
+body.editing .tile.dragging{opacity:.4}
+body.editing .t-title{cursor:text}
+body.editing .t-title:hover{background:#ffe6df}
+.folder .fctrl{position:absolute;top:44px;right:8px;display:none;gap:5px;z-index:3}
+body.editing .folder .fctrl{display:flex}
+.fctrl button{
+  width:26px;height:26px;border:var(--hair);border-radius:6px;background:var(--card);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1;display:grid;place-items:center;
+}
+.fctrl button:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ---------- lightbox ---------- */
+#lb{
+  position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+  background:rgba(20,20,20,.88);padding:24px;flex-direction:column;gap:14px;
+}
+#lb.open{display:flex}
+#lb .stage{max-width:min(1100px,94vw);max-height:80vh;display:flex}
+#lb img,#lb video{max-width:100%;max-height:80vh;border-radius:8px}
+#lb model-viewer{width:min(1100px,94vw);height:80vh;background:#2a2a2a;border-radius:8px}
+#lb .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#dcd9d1;text-transform:uppercase;letter-spacing:.06em}
+#lb .close{position:absolute;top:18px;right:22px;color:#fff;font-size:15px;font-family:'IBM Plex Mono',monospace;border:1px solid #777;border-radius:999px;padding:8px 15px}
+#lb .close:hover{border-color:var(--accent);color:var(--accent)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ PORTFOLIO DATA (auto-managed — edited via the built-in editor) ============ -->
+<script type="application/json" id="portfolio-data">
+{"name":"Your Name","tag":"Graphic Design · 3D · Motion","email":"","link":"","linkLabel":"","projects":[]}
+</script>
+
+<aside id="editor" aria-label="Portfolio editor">
+  <h2>Portfolio Builder</h2>
+
+  <div class="sect">
+    <div class="sect-head">Profile</div>
+    <label for="f-name">Name</label>
+    <input type="text" id="f-name">
+    <label for="f-tag">Tagline</label>
+    <input type="text" id="f-tag">
+    <label for="f-email">Contact email</label>
+    <input type="email" id="f-email" placeholder="you@mail.com">
+    <label for="f-link">Link (Behance / Insta / etc)</label>
+    <input type="text" id="f-link" placeholder="https://…">
+    <label for="f-linklabel">Link label</label>
+    <input type="text" id="f-linklabel" placeholder="BEHANCE">
+  </div>
+
+  <div class="sect">
+    <div class="sect-head">Folders</div>
+    <div id="folder-list"></div>
+    <button class="btn sm" id="new-folder">+ New folder</button>
+    <div id="proj-fields" style="display:none">
+      <label for="f-pdesc">Folder description</label>
+      <input type="text" id="f-pdesc" placeholder="One line about this project">
+
+      <label style="margin-top:14px;border-top:1px solid #c9c6be;padding-top:10px;display:block">GitHub auto-sync (optional)</label>
+      <input type="text" id="f-gh-owner" placeholder="github username">
+      <input type="text" id="f-gh-repo" placeholder="repo name" style="margin-top:6px">
+      <input type="text" id="f-gh-branch" placeholder="branch (default: main)" style="margin-top:6px">
+      <button class="btn sm" id="gh-sync-now">Sync now</button>
+      <div id="gh-status" class="hint"></div>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="sect-head">Add work</div>
+    <div id="drop" tabindex="0" role="button" aria-label="Add media files">
+      <strong>Drop files here</strong>
+      <span id="drop-msg">img · gif · mp4/webm · glb</span>
+    </div>
+    <input type="file" id="picker" multiple hidden
+      accept=".png,.jpg,.jpeg,.webp,.avif,.svg,.gif,.mp4,.webm,.mov,.glb,.gltf">
+  </div>
+
+  <div class="sect">
+    <button class="btn hot" id="export">Export index.html</button>
+    <button class="btn" id="preview">Preview view mode</button>
+    <div class="hint">
+      <b>Workflow</b><br>
+      1 · Make folders, open one, drop your work in<br>
+      2 · Drag to reorder · ⤢ cycles size · click names to rename<br>
+      3 · Export index.html<br>
+      4 · In your repo: index.html at root, files at the exact paths below<br>
+      5 · Enable GitHub Pages → send the link<br><br>
+      <b>Auto-sync a folder:</b> in a folder's settings, set the GitHub owner + repo (public repos only, branch defaults to main). After that, just push new files into media/&lt;folder&gt;/ on GitHub — no need to reopen the editor, the live site pulls the file list on each visit. New files get default titles/sizing; reopen with <b>?edit</b> anytime to rename or resize, then export again to lock those in.<br><br>
+      Reopen the exported file with <b>?edit</b> on the URL to keep editing.
+    </div>
+    <div id="filelist"></div>
+  </div>
+</aside>
+
+<div id="app">
+  <header id="site-header">
+    <div>
+      <div id="h-name"></div>
+      <div id="h-tag"></div>
+    </div>
+    <div class="h-actions" id="h-actions"></div>
+  </header>
+
+  <main>
+    <div id="proj-bar">
+      <a id="proj-back" href="#">← Folders</a>
+      <span id="proj-title"></span>
+      <span id="proj-desc"></span>
+    </div>
+    <div id="folders" aria-label="Projects"></div>
+    <div id="grid" aria-label="Work"></div>
+    <div id="empty"></div>
+  </main>
+
+  <footer>
+    <span class="mono" id="f-count"></span>
+    <span class="mono" id="f-year"></span>
+  </footer>
+</div>
+
+<div id="lb" role="dialog" aria-modal="true">
+  <button class="close" id="lb-close">ESC / CLOSE</button>
+  <div class="stage" id="lb-stage"></div>
+  <div class="cap" id="lb-cap"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ---------- state ---------- */
+const dataEl = document.getElementById('portfolio-data');
+let state;
+try { state = JSON.parse(dataEl.textContent); }
+catch(e){ state = {name:"Your Name",tag:"",email:"",link:"",linkLabel:"",projects:[]}; }
+// migrate old flat format
+if (state.items && !state.projects){
+  state.projects = state.items.length
+    ? [{id:uid(), slug:'work', title:'Work', desc:'', items:state.items}]
+    : [];
+  delete state.items;
+}
+state.projects = state.projects || [];
+
+const blobs = new Map();            // item id -> objectURL (runtime only, never exported)
+const params = new URLSearchParams(location.search);
+let editing = params.has('edit') || (state.projects.length === 0 && location.protocol === 'file:') || params.has('new');
+if (params.has('view')) editing = false;
+
+const SIZES = ['s','w','t','l','xl'];
+function uid(){ return 'i' + Math.random().toString(36).slice(2,9); }
+
+function typeOf(name){
+  const ext = name.split('.').pop().toLowerCase();
+  if (ext === 'gif') return 'gif';
+  if (['png','jpg','jpeg','webp','avif','svg'].includes(ext)) return 'img';
+  if (['mp4','webm','mov'].includes(ext)) return 'vid';
+  if (['glb','gltf'].includes(ext)) return '3d';
+  return null;
+}
+const badgeText = {img:'IMG', gif:'GIF', vid:'VID', '3d':'3D'};
+
+function sanitize(s){ return s.toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'') || 'x'; }
+function uniqueSlug(base){
+  let slug = sanitize(base), n = 2;
+  while (state.projects.some(p => p.slug === slug)) slug = sanitize(base) + '-' + n++;
+  return slug;
+}
+
+/* ---------- routing ---------- */
+function currentProject(){
+  const m = location.hash.match(/^#p\/(.+)$/);
+  if (!m) return null;
+  return state.projects.find(p => p.slug === decodeURIComponent(m[1])) || null;
+}
+window.addEventListener('hashchange', renderApp);
+
+/* ---------- github folder sync ---------- */
+function mergeGithubFiles(p, filenames){
+  const existing = new Set(p.items.map(i => i.path));
+  let added = 0;
+  filenames.forEach(name => {
+    const type = typeOf(name);
+    if (!type) return;
+    const path = 'media/' + p.slug + '/' + name;
+    if (existing.has(path)) return;
+    p.items.push({
+      id: uid(), type, path,
+      title: name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),
+      size: (type === '3d' || type === 'vid') ? 'l' : 's'
+    });
+    added++;
+  });
+  return added;
+}
+
+async function syncProject(p, opts){
+  opts = opts || {};
+  if (!p.gh || !p.gh.owner || !p.gh.repo){
+    p._ghStatus = null; p._ghError = null;
+    return;
+  }
+  p._ghLoading = true;
+  if (!opts.silent) renderApp();
+  try{
+    const branch = p.gh.branch || 'main';
+    const dirPath = 'media/' + p.slug;
+    const url = 'https://api.github.com/repos/' + encodeURIComponent(p.gh.owner) +
+      '/' + encodeURIComponent(p.gh.repo) + '/contents/' + dirPath +
+      '?ref=' + encodeURIComponent(branch);
+    const res = await fetch(url, {headers:{Accept:'application/vnd.github+json'}});
+    if (res.status === 404){
+      p._ghStatus = 'Folder not found yet at media/' + p.slug + ' on ' + branch + ' — add files and it will appear.';
+      p._ghError = null;
+    } else if (!res.ok){
+      throw new Error(res.status === 403 ? 'rate limited, try later' : ('HTTP ' + res.status));
+    } else {
+      const arr = await res.json();
+      const names = Array.isArray(arr) ? arr.filter(f => f.type === 'file').map(f => f.name) : [];
+      const added = mergeGithubFiles(p, names);
+      p._ghStatus = added ? ('Synced — added ' + added + ' new file' + (added > 1 ? 's' : '') + '.') : 'Synced — up to date.';
+      p._ghError = null;
+    }
+  }catch(err){
+    p._ghStatus = null;
+    p._ghError = 'Sync failed: ' + (err.message || 'check owner / repo / branch');
+  }
+  p._ghLoading = false;
+  p._synced = true;
+  renderApp();
+}
+
+/* ---------- render: header/footer ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function renderChrome(){
+  const nm = state.name || 'Your Name';
+  document.title = nm + ' — Portfolio';
+  document.getElementById('h-name').innerHTML = escapeHtml(nm) + '<span class="dot">.</span>';
+  document.getElementById('h-tag').textContent = state.tag || '';
+  const acts = document.getElementById('h-actions');
+  acts.innerHTML = '';
+  if (state.link){
+    const a = document.createElement('a');
+    a.className = 'pill'; a.href = state.link; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = state.linkLabel || 'Link';
+    acts.appendChild(a);
+  }
+  if (state.email){
+    const a = document.createElement('a');
+    a.className = 'pill hot'; a.href = 'mailto:' + state.email;
+    a.textContent = 'Hire me';
+    acts.appendChild(a);
+  }
+  const total = state.projects.reduce((n,p) => n + p.items.length, 0);
+  document.getElementById('f-count').textContent =
+    String(state.projects.length).padStart(2,'0') + ' folders · ' + String(total).padStart(2,'0') + ' pieces';
+  document.getElementById('f-year').textContent = '© ' + new Date().getFullYear() + ' ' + nm;
+}
+
+/* ---------- media ---------- */
+function src(item){ return blobs.get(item.id) || item.path; }
+
+function mediaNode(item, inLightbox){
+  if (item.type === '3d'){
+    const mv = document.createElement('model-viewer');
+    mv.setAttribute('src', src(item));
+    mv.setAttribute('camera-controls','');
+    mv.setAttribute('auto-rotate','');
+    mv.setAttribute('shadow-intensity','1');
+    if (!inLightbox) mv.setAttribute('interaction-prompt','none');
+    return mv;
+  }
+  if (item.type === 'vid'){
+    const v = document.createElement('video');
+    v.src = src(item);
+    v.muted = true; v.loop = true; v.autoplay = !inLightbox; v.playsInline = true;
+    if (inLightbox){ v.controls = true; v.autoplay = true; }
+    return v;
+  }
+  const im = document.createElement('img');
+  im.src = src(item); im.alt = item.title || ''; im.loading = 'lazy';
+  return im;
+}
+
+/* ---------- render: folder landing ---------- */
+function coverItem(p){
+  return p.items.find(i => i.type === 'img' || i.type === 'gif')
+      || p.items.find(i => i.type === 'vid')
+      || null;
+}
+
+function renderFolders(){
+  const wrap = document.getElementById('folders');
+  wrap.innerHTML = '';
+  wrap.style.display = 'grid';
+  state.projects.forEach(p => {
+    const f = document.createElement(editing ? 'div' : 'a');
+    f.className = 'folder';
+    if (!editing){ f.href = '#p/' + encodeURIComponent(p.slug); }
+    f.dataset.slug = p.slug;
+
+    const tab = document.createElement('span');
+    tab.className = 'tab';
+    tab.textContent = p.title;
+    f.appendChild(tab);
+
+    const body = document.createElement('div');
+    body.className = 'body';
+    const cov = document.createElement('div');
+    cov.className = 'cover';
+    const ci = coverItem(p);
+    if (ci){
+      cov.appendChild(mediaNode(ci, false));
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      ph.textContent = p.items.length ? '3D' : '· · ·';
+      cov.appendChild(ph);
+    }
+    body.appendChild(cov);
+
+    const types = [...new Set(p.items.map(i => badgeText[i.type]))].join(' / ');
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.innerHTML = '<span class="n">' + String(p.items.length).padStart(2,'0') + '</span> pieces' +
+      '<span class="types">' + escapeHtml(types) + '</span>';
+    body.appendChild(meta);
+    f.appendChild(body);
+
+    if (editing){
+      const c = document.createElement('div');
+      c.className = 'fctrl';
+      c.innerHTML =
+        '<button title="Open folder" data-act="open">→</button>' +
+        '<button title="Delete folder" data-act="del">×</button>';
+      f.appendChild(c);
+      c.querySelector('[data-act=open]').addEventListener('click', e => {
+        e.stopPropagation();
+        location.hash = '#p/' + encodeURIComponent(p.slug);
+      });
+      c.querySelector('[data-act=del]').addEventListener('click', e => {
+        e.stopPropagation();
+        if (!confirm('Delete folder "' + p.title + '" and its ' + p.items.length + ' pieces?')) return;
+        state.projects = state.projects.filter(x => x.id !== p.id);
+        renderApp();
+      });
+      // rename via tab
+      tab.addEventListener('click', e => {
+        e.stopPropagation();
+        tab.contentEditable = 'true'; tab.focus();
+        document.execCommand && document.execCommand('selectAll', false, null);
+      });
+      tab.addEventListener('blur', () => {
+        tab.contentEditable = 'false';
+        p.title = tab.textContent.trim() || p.title;
+        renderApp();
+      });
+      tab.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); tab.blur(); } });
+      // double-click anywhere opens
+      f.addEventListener('dblclick', () => location.hash = '#p/' + encodeURIComponent(p.slug));
+      // drag reorder
+      f.draggable = true;
+      f.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/folder', p.id);
+        f.classList.add('dragging');
+      });
+      f.addEventListener('dragend', () => f.classList.remove('dragging'));
+      f.addEventListener('dragover', e => e.preventDefault());
+      f.addEventListener('drop', e => {
+        const fromId = e.dataTransfer.getData('text/folder');
+        if (!fromId) return; // might be a file drop
+        e.preventDefault(); e.stopPropagation();
+        if (fromId === p.id) return;
+        const from = state.projects.findIndex(x => x.id === fromId);
+        const to = state.projects.findIndex(x => x.id === p.id);
+        const [moved] = state.projects.splice(from,1);
+        state.projects.splice(to,0,moved);
+        renderApp();
+      });
+    }
+    wrap.appendChild(f);
+  });
+}
+
+/* ---------- render: bento grid ---------- */
+function renderGrid(p){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  grid.classList.add('show');
+  p.items.forEach((item, i) => {
+    const t = document.createElement('article');
+    t.className = 'tile size-' + (item.size || 's');
+    t.dataset.id = item.id;
+
+    const m = document.createElement('div');
+    m.className = 'media';
+    m.appendChild(mediaNode(item, false));
+    t.appendChild(m);
+
+    const lab = document.createElement('div');
+    lab.className = 'label';
+    lab.innerHTML =
+      '<span class="idx">' + String(i+1).padStart(2,'0') + '</span>' +
+      '<span class="t-title">' + escapeHtml(item.title || item.path.split('/').pop()) + '</span>' +
+      '<span class="badge b-' + item.type + '">' + badgeText[item.type] + '</span>';
+    t.appendChild(lab);
+
+    if (editing){
+      const c = document.createElement('div');
+      c.className = 'ctrl';
+      c.innerHTML =
+        '<button title="Cycle size" data-act="size">⤢</button>' +
+        '<button title="Remove" data-act="del">×</button>';
+      t.appendChild(c);
+      t.draggable = true;
+      wireEditTile(t, p, item, lab.querySelector('.t-title'));
+    } else if (item.type !== '3d'){
+      t.addEventListener('click', () => openLB(item));
+      t.tabIndex = 0;
+      t.addEventListener('keydown', e => { if (e.key==='Enter') openLB(item); });
+    }
+    grid.appendChild(t);
+  });
+}
+
+/* ---------- master render ---------- */
+function renderApp(){
+  const p = currentProject();
+  const folders = document.getElementById('folders');
+  const grid = document.getElementById('grid');
+  const bar = document.getElementById('proj-bar');
+  const empty = document.getElementById('empty');
+  empty.style.display = 'none';
+
+  if (p){
+    folders.style.display = 'none';
+    bar.classList.add('show');
+    document.getElementById('proj-title').textContent = p.title;
+    document.getElementById('proj-desc').textContent = p.desc || '';
+    if (p.gh && p.gh.owner && p.gh.repo && !p._synced && !p._ghLoading){
+      syncProject(p); // async; will re-render itself when done
+    }
+    renderGrid(p);
+    if (!p.items.length){
+      empty.style.display = 'block';
+      empty.innerHTML = editing
+        ? 'This folder is empty — drop files anywhere to add work.'
+        : 'Nothing here yet.';
+    }
+  } else {
+    bar.classList.remove('show');
+    grid.classList.remove('show');
+    grid.innerHTML = '';
+    renderFolders();
+    if (!state.projects.length){
+      empty.style.display = 'block';
+      empty.innerHTML = editing
+        ? 'No folders yet — hit <b>+ New folder</b> in the sidebar.'
+        : 'No work yet — open this file with <b>?edit</b> at the end of the URL to start building.';
+    }
+  }
+  renderChrome();
+  renderSidebar();
+}
+
+/* ---------- lightbox ---------- */
+const lb = document.getElementById('lb');
+function openLB(item){
+  const stage = document.getElementById('lb-stage');
+  stage.innerHTML = '';
+  stage.appendChild(mediaNode(item, true));
+  document.getElementById('lb-cap').textContent =
+    (item.title || '') + '  ·  ' + badgeText[item.type];
+  lb.classList.add('open');
+}
+function closeLB(){ lb.classList.remove('open'); document.getElementById('lb-stage').innerHTML=''; }
+document.getElementById('lb-close').addEventListener('click', closeLB);
+lb.addEventListener('click', e => { if (e.target === lb) closeLB(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+
+/* ---------- editor: tiles ---------- */
+function wireEditTile(t, p, item, titleEl){
+  t.querySelector('[data-act=size]').addEventListener('click', e => {
+    e.stopPropagation();
+    item.size = SIZES[(SIZES.indexOf(item.size||'s')+1) % SIZES.length];
+    renderApp();
+  });
+  t.querySelector('[data-act=del]').addEventListener('click', e => {
+    e.stopPropagation();
+    p.items = p.items.filter(x => x.id !== item.id);
+    renderApp();
+  });
+  titleEl.addEventListener('click', () => {
+    titleEl.contentEditable = 'true'; titleEl.focus();
+    document.execCommand && document.execCommand('selectAll', false, null);
+  });
+  titleEl.addEventListener('blur', () => {
+    titleEl.contentEditable = 'false';
+    item.title = titleEl.textContent.trim();
+    renderApp();
+  });
+  titleEl.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); titleEl.blur(); } });
+
+  t.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/tile', item.id);
+    t.classList.add('dragging');
+  });
+  t.addEventListener('dragend', () => t.classList.remove('dragging'));
+  t.addEventListener('dragover', e => e.preventDefault());
+  t.addEventListener('drop', e => {
+    const fromId = e.dataTransfer.getData('text/tile');
+    if (!fromId) return; // could be a file drop; let window handler take it
+    e.preventDefault(); e.stopPropagation();
+    if (fromId === item.id) return;
+    const from = p.items.findIndex(x => x.id === fromId);
+    const to = p.items.findIndex(x => x.id === item.id);
+    if (from < 0 || to < 0) return;
+    const [moved] = p.items.splice(from,1);
+    p.items.splice(to,0,moved);
+    renderApp();
+  });
+}
+
+/* ---------- editor: sidebar ---------- */
+function renderSidebar(){
+  if (!editing) return;
+  const p = currentProject();
+  // folder list
+  const fl = document.getElementById('folder-list');
+  fl.innerHTML = '';
+  state.projects.forEach(pr => {
+    const b = document.createElement('button');
+    b.className = 'fl-item' + (p && pr.id === p.id ? ' active' : '');
+    b.innerHTML = '<span class="nm">' + escapeHtml(pr.title) + '</span>' +
+      '<span class="ct">' + String(pr.items.length).padStart(2,'0') + '</span>';
+    b.addEventListener('click', () => {
+      location.hash = (p && pr.id === p.id) ? '' : '#p/' + encodeURIComponent(pr.slug);
+    });
+    fl.appendChild(b);
+  });
+  // desc field
+  const pf = document.getElementById('proj-fields');
+  const pd = document.getElementById('f-pdesc');
+  const go = document.getElementById('f-gh-owner');
+  const gr = document.getElementById('f-gh-repo');
+  const gb = document.getElementById('f-gh-branch');
+  const gs = document.getElementById('gh-sync-now');
+  const gstat = document.getElementById('gh-status');
+  if (p){
+    pf.style.display = 'block';
+    if (pd.value !== (p.desc || '')) pd.value = p.desc || '';
+    pd.oninput = () => { p.desc = pd.value; document.getElementById('proj-desc').textContent = pd.value; };
+
+    p.gh = p.gh || {owner:'', repo:'', branch:''};
+    if (document.activeElement !== go) go.value = p.gh.owner;
+    if (document.activeElement !== gr) gr.value = p.gh.repo;
+    if (document.activeElement !== gb) gb.value = p.gh.branch;
+    go.oninput = () => { p.gh.owner = go.value.trim(); p._synced = false; };
+    gr.oninput = () => { p.gh.repo = gr.value.trim(); p._synced = false; };
+    gb.oninput = () => { p.gh.branch = gb.value.trim(); p._synced = false; };
+    gs.onclick = () => { p._synced = false; syncProject(p); };
+    gstat.textContent = p._ghLoading ? 'Syncing…' : (p._ghError || p._ghStatus || 'Set owner + repo to auto-pull new files from media/' + p.slug + '/ on push.');
+    gstat.style.color = p._ghError ? 'var(--accent)' : '';
+  } else {
+    pf.style.display = 'none';
+    pd.oninput = null;
+    go.oninput = gr.oninput = gb.oninput = gs.onclick = null;
+  }
+  // drop zone state
+  const drop = document.getElementById('drop');
+  const msg = document.getElementById('drop-msg');
+  if (p){
+    drop.classList.remove('disabled');
+    msg.innerHTML = 'into <b style="color:var(--ink)">' + escapeHtml(p.title) + '</b> · img · gif · mp4 · glb';
+  } else {
+    drop.classList.add('disabled');
+    msg.textContent = 'open a folder first';
+  }
+  renderFileList();
+}
+
+document.getElementById('new-folder').addEventListener('click', () => {
+  const title = prompt('Folder name:', 'New Project');
+  if (!title) return;
+  const pr = {id:uid(), slug:uniqueSlug(title), title:title.trim(), desc:'', items:[]};
+  state.projects.push(pr);
+  location.hash = '#p/' + encodeURIComponent(pr.slug);
+  renderApp();
+});
+
+/* ---------- editor: adding files ---------- */
+function addFiles(files){
+  const p = currentProject();
+  if (!p){ return; }
+  [...files].forEach(f => {
+    const type = typeOf(f.name);
+    if (!type) return;
+    const id = uid();
+    blobs.set(id, URL.createObjectURL(f));
+    p.items.push({
+      id, type,
+      path: 'media/' + p.slug + '/' + sanitize(f.name),
+      title: f.name.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' '),
+      size: (type === '3d' || type === 'vid') ? 'l' : 's'
+    });
+  });
+  renderApp();
+}
+
+const drop = document.getElementById('drop');
+const picker = document.getElementById('picker');
+drop.addEventListener('click', () => picker.click());
+drop.addEventListener('keydown', e => { if (e.key==='Enter') picker.click(); });
+picker.addEventListener('change', () => { addFiles(picker.files); picker.value=''; });
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+// whole-window drop also works while editing a folder
+window.addEventListener('dragover', e => { if (editing) e.preventDefault(); });
+window.addEventListener('drop', e => {
+  if (!editing) return;
+  if (e.target.closest && (e.target.closest('.tile') || e.target.closest('.folder') || e.target.closest('#drop'))) return;
+  e.preventDefault();
+  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+
+function bindField(id, key){
+  const el = document.getElementById(id);
+  el.value = state[key] || '';
+  el.addEventListener('input', () => { state[key] = el.value; renderChrome(); });
+}
+
+function renderFileList(){
+  const el = document.getElementById('filelist');
+  const rows = [];
+  state.projects.forEach(p => {
+    if (!p.items.length) return;
+    rows.push('<span>media/' + escapeHtml(p.slug) + '/</span>');
+    p.items.forEach(i => rows.push('&nbsp;&nbsp;' + escapeHtml(i.path.split('/').pop())));
+  });
+  el.innerHTML = rows.length ? '<b style="color:var(--ink)">Repo files needed:</b><br>' + rows.join('<br>') : '';
+}
+
+/* ---------- export ---------- */
+function exportHtml(){
+  const clean = JSON.parse(JSON.stringify(state));
+  clean.projects.forEach(p => { delete p._synced; delete p._ghStatus; delete p._ghError; delete p._ghLoading; });
+  const doc = document.documentElement.cloneNode(true);
+  doc.querySelector('#portfolio-data').textContent = '\n' + JSON.stringify(clean) + '\n';
+  // strip runtime-rendered DOM; everything re-renders on load
+  ['#grid','#lb-stage','#filelist','#h-actions','#folders','#folder-list'].forEach(sel => {
+    const n = doc.querySelector(sel); if (n) n.innerHTML = '';
+  });
+  doc.querySelector('body').classList.remove('editing');
+  const bb = doc.querySelector('#back-edit'); if (bb) bb.remove();
+  const html = '<!DOCTYPE html>\n' + doc.outerHTML;
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'index.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+document.getElementById('export').addEventListener('click', exportHtml);
+
+const backBtn = document.createElement('button');
+backBtn.id = 'back-edit';
+backBtn.className = 'pill';
+backBtn.textContent = 'Back to editing';
+backBtn.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:60;display:none';
+document.body.appendChild(backBtn);
+
+function setEditing(on){
+  editing = on;
+  document.body.classList.toggle('editing', on);
+  backBtn.style.display = on ? 'none' : 'inline-block';
+  renderApp();
+}
+document.getElementById('preview').addEventListener('click', () => setEditing(false));
+backBtn.addEventListener('click', () => setEditing(true));
+
+/* ---------- init ---------- */
+document.body.classList.toggle('editing', editing);
+bindField('f-name','name');
+bindField('f-tag','tag');
+bindField('f-email','email');
+bindField('f-link','link');
+bindField('f-linklabel','linkLabel');
+renderApp();
+
+})();
+</script>
+</body>
+</html>
