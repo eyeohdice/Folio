@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio</title>
+<title>eye-oh-dice — Portfolio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
 <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 <style>
 :root{
@@ -253,11 +252,11 @@ body.editing .folder .fctrl{display:flex}
 }
 </style>
 </head>
-<body>
+<body class="">
 
 <!-- ============ PORTFOLIO DATA (auto-managed — edited via the built-in editor) ============ -->
 <script type="application/json" id="portfolio-data">
-{"name":"Your Name","tag":"Graphic Design · 3D · Motion","email":"","link":"","linkLabel":"","projects":[]}
+{"name":"eye-oh-dice","tag":"Graphic Design · 3D · Motion","email":"abiodice@gmail.com","link":"instagram.com/iohdice","linkLabel":"","projects":[{"id":"i3ynuk36","slug":"doom-get-the-cash","title":"DOOM GET THE CASH","desc":"","items":[{"id":"imh88657","type":"img","path":"media/doom-get-the-cash/copy-of-render-doombox-site.png","title":"Copy of render doombox site","size":"s"},{"id":"im8dja3u","type":"img","path":"media/doom-get-the-cash/copy-of-doom_get_the_cash.png","title":"Copy of DOOM GET THE CASH","size":"s"},{"id":"ijmo7vwx","type":"img","path":"media/doom-get-the-cash/copy-of-figure-render-close-up.jpg","title":"Copy of FIGURE RENDER CLOSE UP","size":"s"},{"id":"i8ucew3y","type":"img","path":"media/doom-get-the-cash/copy-of-pxl_20221015_153248338.jpg","title":"Copy of PXL 20221015 153248338","size":"s"},{"id":"imctgmgx","type":"img","path":"media/doom-get-the-cash/copy-of-pxl_20221015_153224106.jpg","title":"Copy of PXL 20221015 153224106","size":"s"},{"id":"iyd55twy","type":"img","path":"media/doom-get-the-cash/copy-of-hanging_t-shirt_mockup-doom.jpg","title":"Copy of Hanging T Shirt Mockup DOOM","size":"s"},{"id":"i659zx37","type":"img","path":"media/doom-get-the-cash/img_1024.jpg","title":"IMG 1024","size":"s"},{"id":"i2k5183p","type":"img","path":"media/doom-get-the-cash/copy-of-doom-sticker-pack.png","title":"Copy of DOOM sticker pack","size":"s"}],"gh":{"owner":"eyeohdice","repo":"DOOM GET THE CASH","branch":"main"}}]}
 </script>
 
 <aside id="editor" aria-label="Portfolio editor">
@@ -281,7 +280,7 @@ body.editing .folder .fctrl{display:flex}
     <div class="sect-head">Folders</div>
     <div id="folder-list"></div>
     <button class="btn sm" id="new-folder">+ New folder</button>
-    <div id="proj-fields" style="display:none">
+    <div id="proj-fields" style="display: block;">
       <label for="f-pdesc">Folder description</label>
       <input type="text" id="f-pdesc" placeholder="One line about this project">
 
@@ -290,18 +289,17 @@ body.editing .folder .fctrl{display:flex}
       <input type="text" id="f-gh-repo" placeholder="repo name" style="margin-top:6px">
       <input type="text" id="f-gh-branch" placeholder="branch (default: main)" style="margin-top:6px">
       <button class="btn sm" id="gh-sync-now">Sync now</button>
-      <div id="gh-status" class="hint"></div>
+      <div id="gh-status" class="hint">Set owner + repo to auto-pull new files from media/doom-get-the-cash/ on push.</div>
     </div>
   </div>
 
   <div class="sect">
     <div class="sect-head">Add work</div>
-    <div id="drop" tabindex="0" role="button" aria-label="Add media files">
+    <div id="drop" tabindex="0" role="button" aria-label="Add media files" class="">
       <strong>Drop files here</strong>
-      <span id="drop-msg">img · gif · mp4/webm · glb</span>
+      <span id="drop-msg">into <b style="color:var(--ink)">DOOM GET THE CASH</b> · img · gif · mp4 · glb</span>
     </div>
-    <input type="file" id="picker" multiple hidden
-      accept=".png,.jpg,.jpeg,.webp,.avif,.svg,.gif,.mp4,.webm,.mov,.glb,.gltf">
+    <input type="file" id="picker" multiple="" hidden="" accept=".png,.jpg,.jpeg,.webp,.avif,.svg,.gif,.mp4,.webm,.mov,.glb,.gltf">
   </div>
 
   <div class="sect">
@@ -324,26 +322,26 @@ body.editing .folder .fctrl{display:flex}
 <div id="app">
   <header id="site-header">
     <div>
-      <div id="h-name"></div>
-      <div id="h-tag"></div>
+      <div id="h-name">eye-oh-dice<span class="dot">.</span></div>
+      <div id="h-tag">Graphic Design · 3D · Motion</div>
     </div>
     <div class="h-actions" id="h-actions"></div>
   </header>
 
   <main>
-    <div id="proj-bar">
+    <div id="proj-bar" class="show">
       <a id="proj-back" href="#">← Folders</a>
-      <span id="proj-title"></span>
+      <span id="proj-title">DOOM GET THE CASH</span>
       <span id="proj-desc"></span>
     </div>
-    <div id="folders" aria-label="Projects"></div>
-    <div id="grid" aria-label="Work"></div>
-    <div id="empty"></div>
+    <div id="folders" aria-label="Projects" style="display: none;"></div>
+    <div id="grid" aria-label="Work" class="show"></div>
+    <div id="empty" style="display: none;">This folder is empty — drop files anywhere to add work.</div>
   </main>
 
   <footer>
-    <span class="mono" id="f-count"></span>
-    <span class="mono" id="f-year"></span>
+    <span class="mono" id="f-count">01 folders · 08 pieces</span>
+    <span class="mono" id="f-year">© 2026 eye-oh-dice</span>
   </footer>
 </div>
 
@@ -920,5 +918,6 @@ renderApp();
 
 })();
 </script>
-</body>
-</html>
+
+
+</body></html>
